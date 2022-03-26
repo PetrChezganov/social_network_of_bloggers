@@ -445,7 +445,7 @@ class FollowViewsTest(TestCase):
         self.assertEqual(
             first_object.author.username, self.post.author.username
         )
-        Post.objects.create(
+        post = Post.objects.create(
             text='Новый пост автора',
             author=self.author,
         )
@@ -463,9 +463,12 @@ class FollowViewsTest(TestCase):
         response = self.not_subscriber_client.get(
             reverse('posts:follow_index')
         )
+        self.assertIn('page_obj', response.context)
+        self.assertNotIn(post, response.context['page_obj'])
         self.assertNotIn(
             self.post.text, response.content.decode('utf-8')
         )
+
         self.assertNotIn(
             'Новый пост автора', response.content.decode('utf-8')
         )
