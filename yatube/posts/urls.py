@@ -27,4 +27,5 @@ urlpatterns = [
         views.profile_unfollow,
         name='profile_unfollow'
     ),
+    path('profile/<str:username>/avatar/', views.avatar_create, name='avatar'),
 ]

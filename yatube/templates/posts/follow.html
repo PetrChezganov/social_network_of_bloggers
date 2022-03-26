@@ -6,9 +6,7 @@
   {% include 'posts/includes/switcher.html' %}
   {% for post in page_obj %}
     {% include 'posts/includes/post.html' %}
-    <!-- под последним постом нет линии -->
     {% if not forloop.last %}<hr>{% endif %}
   {% endfor %}
-  <!-- Здесь подключён паджинатор -->
   {% include 'posts/includes/paginator.html' %}
 {% endblock %}

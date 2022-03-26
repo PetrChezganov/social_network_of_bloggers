@@ -1,9 +1,9 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from posts.models import Group, Follow, Post
+from posts.models import Group, Follow, Post, Profile
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.db.models import Q
-from .forms import CommentForm, PostForm
+from .forms import CommentForm, PostForm, ProfileForm
 from .utils import page_obj_create
 
 User = get_user_model()
@@ -48,12 +48,13 @@ def profile(request, username):
     author_posts = selected_author.posts.all()
     page_obj = page_obj_create(request, author_posts)
     count = selected_author.posts.all().count()
-    following = False
-    if isinstance(request.user, User):
-        following = Follow.objects.filter(
+    following = (
+        request.user.is_authenticated
+        and Follow.objects.filter(
             user=request.user,
-            author=selected_author,
+            author=selected_author
         ).exists()
+    )
     context = {
         'page_obj': page_obj,
         'author': selected_author,
@@ -67,7 +68,7 @@ def post_detail(request, post_id):
     selected_post = get_object_or_404(Post, id=post_id)
     count = selected_post.author.posts.all().count()
     comments = selected_post.comments.all()
-    form = CommentForm(request.POST or None)
+    form = CommentForm()
     context = {
         'post': selected_post,
         'user': request.user,
@@ -137,16 +138,12 @@ def post_delete(request, post_id):
 
 @login_required
 def follow_index(request):
-    following_authors = request.user.follower.all().values_list(
-        'author', flat=True
-    )
-    posts = Post.objects.filter(author__in=following_authors).all()
+    posts = Post.objects.filter(author__following__user=request.user).all()
     page_obj = page_obj_create(request, posts)
     context = {
         'page_obj': page_obj,
     }
-    template = 'posts/follow.html'
-    return render(request, template, context)
+    return render(request, 'posts/follow.html', context)
 
 
 @login_required
@@ -163,9 +160,43 @@ def profile_follow(request, username):
 
 @login_required
 def profile_unfollow(request, username):
-    author = get_object_or_404(User, username=username)
-    if author == request.user:
-        return redirect('posts:profile', username=request.user)
-    follow = get_object_or_404(Follow, user=request.user, author=author)
+    follow = (
+        Follow.objects.filter(user=request.user)
+        .filter(author__username=username)
+    )
     follow.delete()
     return redirect('posts:profile', username=username)
+
+
+@login_required
+def avatar_create(request, username):
+    author = get_object_or_404(User, username=username)
+    count = author.posts.all().count()
+    if not(author == request.user):
+        return redirect('posts:profile', username=username)
+    if Profile.objects.filter(user=author).exists():
+        selected_profile = get_object_or_404(Profile, user=author)
+        form = ProfileForm(
+            request.POST or None,
+            files=request.FILES or None,
+            instance=selected_profile,
+        )
+        if form.is_valid():
+            selected_profile.save()
+            return redirect('posts:profile', username=request.user)
+    else:
+        form = ProfileForm(
+            request.POST or None,
+            files=request.FILES or None,
+        )
+        if form.is_valid():
+            new_profile = form.save(commit=False)
+            new_profile.user = request.user
+            new_profile.save()
+            return redirect('posts:profile', username=request.user)
+    context = {
+        'author': author,
+        'count': count,
+        'form': form,
+    }
+    return render(request, 'posts/avatar.html', context)

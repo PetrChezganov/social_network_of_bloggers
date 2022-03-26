@@ -31,7 +31,6 @@
           {% else %}
           <form method="post" enctype="multipart/form-data" action="{% url 'posts:post_create' %}">
           {% endif %}
-            <!-- <input type="hidden" name="csrfmiddlewaretoken" value=""> -->
             {% csrf_token %}
             <!-- {{ form.as_p }} -->
             {% for field in form %}
@@ -57,12 +56,8 @@
               </button>
             </div>
           </form>
-        </div>
-        <!-- card body -->
-      </div>
-      <!-- card -->
-    </div>
-    <!-- col -->
-  </div>
-  <!-- row -->
+        </div>  <!-- card body -->
+      </div>  <!-- card -->
+    </div>  <!-- col -->
+  </div>  <!-- row -->
 {% endblock %}

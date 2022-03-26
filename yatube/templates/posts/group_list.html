@@ -23,9 +23,7 @@
       </p>
       <a href="{% url 'posts:post_detail' post.id %}">подробная информация</a>
     <article>
-    <!-- под последним постом нет линии -->
     {% if not forloop.last %}<hr>{% endif %}
   {% endfor %}
-  <!-- Здесь подключён паджинатор -->
   {% include 'posts/includes/paginator.html' %}
 {% endblock %}

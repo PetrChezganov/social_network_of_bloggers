@@ -1,7 +1,5 @@
 {% load static %}
 <header>
-  <!-- Использованы классы бустрапа для создания типовой навигации с логотипом -->
-  <!-- В дальнейшем тут будет создано полноценное меню -->
   <nav class="navbar navbar-light" style="background-color: lightskyblue">
     <div class="container">
       <a class="navbar-brand" href="{% url 'posts:index' %}">
@@ -10,13 +8,8 @@
              height="30"
              class="d-inline-block align-top"
              alt="">
-        <!-- тег span используется для добавления нужных стилей отдельным участкам текста -->
         <span style="color:red">Ya</span>tube
       </a>
-      {% comment %}
-      Меню - список пунктов со стандартными классами Bootsrap.
-      Класс nav-pills нужен для выделения активных пунктов 
-      {% endcomment %}
       <ul class="nav nav-pills">
         {% with request.resolver_match.view_name as view_name %}
         </li>
@@ -69,6 +62,11 @@
                 </div>
               </a>  
             </li>
+            <li class="nav-item">
+              <a class="nav-link {% if view_name  == 'posts:avatar' %}active{% endif %}"
+                 href="{% url 'posts:avatar' user.username %}">Аватар
+              </a>
+            </li>            
           {% else %}
             <li class="nav-item">
               <a class="nav-link {% if view_name  == 'users:login' %}active{% endif %}"

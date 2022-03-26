@@ -354,7 +354,7 @@ class PostViewsTest(TestCase):
             'posts:profile': {'username': cls.author},
         }
 
-    def test_post_on_pages(self):
+    def test_post_on_pages_groups(self):
         """Проверяем, что пост появляется на главной странице,
         на странице выбранной группы, в профайле пользователя,
         и не появляется на странице другой группы"""
@@ -378,7 +378,7 @@ class FollowViewsTest(TestCase):
         super().setUpClass()
         cls.author = User.objects.create_user(username='TestName')
         cls.subscriber = User.objects.create_user(username='Subscriber')
-        cls.not_subscriber = User.objects.create_user(username='NotSubscriber')
+        cls.unsubscriber = User.objects.create_user(username='NotSubscriber')
         cls.post = Post.objects.create(
             text='Тестовый пост',
             author=cls.author,
@@ -387,12 +387,11 @@ class FollowViewsTest(TestCase):
     def setUp(self):
         self.subscriber_client = Client()
         self.subscriber_client.force_login(self.subscriber)
-        self.not_subscriber_client = Client()
-        self.not_subscriber_client.force_login(self.not_subscriber)
+        self.unsubscriber_client = Client()
+        self.unsubscriber_client.force_login(self.unsubscriber)
 
-    def test_follow_unfollow_for_user(self):
-        """Залогиненный пользователь может подписываться и отписываться
-        от других авторов"""
+    def test_follow_for_user(self):
+        """Залогиненный пользователь может подписываться на других авторов"""
         follows_count = Follow.objects.count()
         self.assertFalse(
             Follow.objects.filter(
@@ -415,6 +414,20 @@ class FollowViewsTest(TestCase):
                 author=self.author
             ).exists()
         )
+
+    def test_unfollow_for_user(self):
+        """Залогиненный пользователь может отписываться от других авторов"""
+        Follow.objects.create(
+            user=self.subscriber,
+            author=self.author
+        )
+        follows_count = Follow.objects.count()
+        self.assertTrue(
+            Follow.objects.filter(
+                user=self.subscriber,
+                author=self.author
+            ).exists()
+        )
         response = self.subscriber_client.post(
             reverse('posts:profile_unfollow', args=(self.author.username,)),
             follow=True
@@ -423,7 +436,7 @@ class FollowViewsTest(TestCase):
         self.assertRedirects(
             response, reverse('posts:profile', args=(self.author.username,))
         )
-        self.assertEqual(Follow.objects.count(), follows_count)
+        self.assertEqual(Follow.objects.count(), follows_count - 1)
         self.assertFalse(
             Follow.objects.filter(
                 user=self.subscriber,
@@ -431,21 +444,13 @@ class FollowViewsTest(TestCase):
             ).exists()
         )
 
-    def test_follow_unfollow_for_user(self):
-        """Новая запись автора появляется в ленте подписчиков
-        и не появляется в ленте не подписчиков."""
+    def test_post_shows_for_subscriber(self):
+        """Новая запись автора появляется в ленте подписчиков."""
         response = self.subscriber_client.post(
             reverse('posts:profile_follow', args=(self.author.username,)),
             follow=True
         )
-        response = self.subscriber_client.get(reverse('posts:follow_index'))
-        PagesViewsTests.check_post_obj_in_context(self, response)
-        first_object = response.context['page_obj'][0]
-        self.assertEqual(first_object.text, self.post.text)
-        self.assertEqual(
-            first_object.author.username, self.post.author.username
-        )
-        post = Post.objects.create(
+        Post.objects.create(
             text='Новый пост автора',
             author=self.author,
         )
@@ -456,15 +461,22 @@ class FollowViewsTest(TestCase):
         self.assertEqual(
             first_object.author.username, self.post.author.username
         )
-        response = self.not_subscriber_client.post(
+
+    def test_post_not_shows_for_unsubscriber(self):
+        """Новая запись автора не появляется в ленте не подписчиков."""
+        response = self.unsubscriber_client.post(
             reverse('posts:profile_unfollow', args=(self.author.username,)),
             follow=True
         )
-        response = self.not_subscriber_client.get(
+        new_post = Post.objects.create(
+            text='Новый пост автора',
+            author=self.author,
+        )
+        response = self.unsubscriber_client.get(
             reverse('posts:follow_index')
         )
         self.assertIn('page_obj', response.context)
-        self.assertNotIn(post, response.context['page_obj'])
+        self.assertNotIn(new_post, response.context['page_obj'])
         self.assertNotIn(
             self.post.text, response.content.decode('utf-8')
         )
