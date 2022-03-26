@@ -450,12 +450,13 @@ class FollowViewsTest(TestCase):
             reverse('posts:profile_follow', args=(self.author.username,)),
             follow=True
         )
-        Post.objects.create(
+        new_post = Post.objects.create(
             text='Новый пост автора',
             author=self.author,
         )
         response = self.subscriber_client.get(reverse('posts:follow_index'))
         PagesViewsTests.check_post_obj_in_context(self, response)
+        self.assertIn(new_post, response.context['page_obj'])
         first_object = response.context['page_obj'][0]
         self.assertEqual(first_object.text, 'Новый пост автора')
         self.assertEqual(
