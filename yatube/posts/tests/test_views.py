@@ -4,7 +4,7 @@ from django.urls import reverse
 from http import HTTPStatus
 from django import forms
 from posts.models import Comment, Follow, Group, Post
-from posts.forms import CommentForm, PostForm
+from posts.forms import CommentForm, PostForm, ProfileForm
 import shutil
 import tempfile
 from django.conf import settings
@@ -83,6 +83,11 @@ class PagesViewsTests(TestCase):
                 'posts/create_post.html'
             ),
             'follow': ('posts:follow_index', None, 'posts/follow.html'),
+            'avatar': (
+                'posts:avatar',
+                {'username': cls.author},
+                'posts/avatar.html'
+            ),
         }
 
     @classmethod
@@ -232,6 +237,24 @@ class PagesViewsTests(TestCase):
         self.assertEqual(
             first_object.author.username, self.not_author.username
         )
+
+    def test_avatar_page_show_correct_context(self):
+        """Шаблон avatar.html сформирован с правильным контекстом."""
+        viewname, kwargs, _, = self.name_kwargs_template['avatar']
+        response = self.author_client.get(reverse(viewname, kwargs=kwargs))
+        self.assertIn('form', response.context)
+        self.assertIsInstance(response.context['form'], ProfileForm)
+        form_fields = {
+            'avatar': forms.fields.ImageField,
+        }
+        for value, expected in form_fields.items():
+            with self.subTest(value=value):
+                form_field = response.context['form'].fields[value]
+                self.assertIsInstance(form_field, expected)
+        self.assertIn('author', response.context)
+        self.assertEqual(response.context['author'], self.post.author)
+        self.assertIn('count', response.context)
+        self.assertEqual(response.context['count'], 1)
 
     def test_cache(self):
         """Главная страница сайта кеширует содержимое на 20 секунд"""

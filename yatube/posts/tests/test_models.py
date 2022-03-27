@@ -44,9 +44,9 @@ class PostModelTest(TestCase):
 
     def test_str_models_names(self):
         """В поле __str__ объекта модели записано ожидаемое значение."""
-        for field, expected_object_name in self.expected_object_names.items():
-            with self.subTest(field=field):
-                self.assertEqual(field, expected_object_name)
+        for name, expected_object_name in self.expected_object_names.items():
+            with self.subTest(name=name):
+                self.assertEqual(name, expected_object_name)
 
     def test_post_verboses_names(self):
         """verbose_name в полях совпадает с ожидаемым."""
