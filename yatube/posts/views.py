@@ -108,7 +108,7 @@ def post_create(request):
 @login_required
 def post_edit(request, post_id):
     selected_post = get_object_or_404(Post, id=post_id)
-    if not(selected_post.author == request.user):
+    if selected_post.author != request.user:
         return redirect('posts:post_detail', post_id=post_id)
     form = PostForm(
         request.POST or None,
@@ -130,7 +130,7 @@ def post_edit(request, post_id):
 def post_delete(request, post_id):
     selected_post = get_object_or_404(Post, id=post_id)
     author = selected_post.author
-    if not(author == request.user):
+    if author != request.user:
         return redirect('posts:post_detail', post_id=post_id)
     selected_post.delete()
     return redirect('posts:profile', username=author)
@@ -160,7 +160,8 @@ def profile_follow(request, username):
 
 @login_required
 def profile_unfollow(request, username):
-    Follow.objects.filter(user=request.user).filter(
+    Follow.objects.filter(
+        user=request.user,
         author__username=username
     ) .delete()
     return redirect('posts:profile', username=username)
@@ -170,7 +171,7 @@ def profile_unfollow(request, username):
 def avatar_create(request, username):
     author = get_object_or_404(User, username=username)
     count = author.posts.all().count()
-    if not(author == request.user):
+    if author != request.user:
         return redirect('posts:profile', username=username)
     if Profile.objects.filter(user=author).exists():
         selected_profile = get_object_or_404(Profile, user=author)
