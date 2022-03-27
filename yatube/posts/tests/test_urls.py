@@ -47,6 +47,9 @@ class PostsURLTests(TestCase):
             f'/profile/{cls.not_author}/unfollow/': (
                 None, HTTPStatus.FOUND
             ),
+            f'/profile/{cls.author}/avatar/': (
+                'posts/avatar.html', HTTPStatus.FOUND
+            ),
             '/unexisting_page/': ('core/404.html', HTTPStatus.NOT_FOUND),
         }
         cls.url_status_for_author = {
@@ -57,6 +60,7 @@ class PostsURLTests(TestCase):
             '/follow/': HTTPStatus.OK,
             f'/profile/{cls.not_author}/follow/': HTTPStatus.FOUND,
             f'/profile/{cls.not_author}/unfollow/': HTTPStatus.FOUND,
+            f'/profile/{cls.author}/avatar/': HTTPStatus.OK,
         }
 
     def setUp(self):
@@ -110,6 +114,8 @@ class PostsURLTests(TestCase):
             f'/profile/{self.author}/follow/':
                 f'/profile/{self.author}/',
             f'/profile/{self.author}/unfollow/':
+                f'/profile/{self.author}/',
+            f'/profile/{self.author}/avatar/':
                 f'/profile/{self.author}/',
         }
         for url, redirect in url_redirect.items():

@@ -23,7 +23,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'gm%i(=(di5s%b9$mx_y3t#t$4ym5%&br%fzl)78gv56i88ct8+'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True  # False
+DEBUG = True  # False True
 
 # ALLOWED_HOSTS = []
 ALLOWED_HOSTS = [
@@ -59,8 +59,6 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'yatube.urls'
-
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
 TEMPLATES_DIR = os.path.join(BASE_DIR, 'templates')
 
@@ -132,6 +130,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
 # myself changes
 

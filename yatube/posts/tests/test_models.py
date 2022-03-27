@@ -1,13 +1,8 @@
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from django.contrib.auth import get_user_model
 from posts.models import Comment, Follow, Group, Post, Profile
-import shutil
-import tempfile
-from django.conf import settings
-from django.core.files.uploadedfile import SimpleUploadedFile
 
 User = get_user_model()
-TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 
 class PostModelTest(TestCase):
@@ -35,27 +30,23 @@ class PostModelTest(TestCase):
             user=cls.author,
             author=cls.not_author
         )
-
-    def test_post_name_is_15_letters_of_text(self):
-        """В поле __str__  объекта post записано значение поля post.text[:15].
-        """
-        expected_object_name = self.post.text[:15]
-        self.assertEqual(expected_object_name, str(self.post))
-
-    def test_comment_name_is_15_letters_of_text(self):
-        """В поле __str__  объекта comment записано значение поля comment.text[:15].
-        """
-        expected_object_name = self.comment.text[:15]
-        self.assertEqual(expected_object_name, str(self.comment))
-
-    def test_follow_name_is_user_follower_of_author(self):
-        """В поле __str__  объекта follow записано значение
-        user.username follower of author.username."""
-        expected_object_name = (
-            f'{self.follow.user.username} follower of '
-            f'{self.follow.author.username}'
+        cls.profile = Profile.objects.create(
+            user=cls.author,
         )
-        self.assertEqual(expected_object_name, str(self.follow))
+        cls.expected_object_names = {
+            cls.post.text[:15]: str(cls.post),
+            cls.group.title: str(cls.group),
+            cls.comment.text[:15]: str(cls.comment),
+            f'{cls.follow.user.username} follower of '
+            f'{cls.follow.author.username}': str(cls.follow),
+            f'{cls.profile.user.username} profile': str(cls.profile),
+        }
+
+    def test_str_models_names(self):
+        """В поле __str__ объекта модели записано ожидаемое значение."""
+        for field, expected_object_name in self.expected_object_names.items():
+            with self.subTest(field=field):
+                self.assertEqual(field, expected_object_name)
 
     def test_post_verboses_names(self):
         """verbose_name в полях совпадает с ожидаемым."""
@@ -93,11 +84,6 @@ class GroupModelTest(TestCase):
             description='Тестовое описание',
         )
 
-    def test_group_name_is_title_field(self):
-        """В поле __str__  объекта group записано значение поля group.title."""
-        expected_object_name = self.group.title
-        self.assertEqual(expected_object_name, str(self.group))
-
     def test_text_convert_to_slug(self):
         """Содержимое поля title преобразуется в slug."""
         slug = self.group.slug
@@ -109,49 +95,3 @@ class GroupModelTest(TestCase):
         max_length_slug = self.group._meta.get_field('slug').max_length
         length_slug = len(self.group.slug)
         self.assertEqual(max_length_slug, length_slug)
-
-
-@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
-class ProfileModelTest(TestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.user = User.objects.create_user(username='TestName')
-        small_gif = (
-            b'\x47\x49\x46\x38\x39\x61\x01\x00'
-            b'\x01\x00\x00\x00\x00\x21\xf9\x04'
-            b'\x01\x0a\x00\x01\x00\x2c\x00\x00'
-            b'\x00\x00\x01\x00\x01\x00\x00\x02'
-            b'\x02\x4c\x01\x00\x3b'
-        )
-        cls.uploaded = SimpleUploadedFile(
-            name='small.gif',
-            content=small_gif,
-            content_type='image/gif'
-        )
-        cls.profile = Profile.objects.create(
-            user=cls.user,
-            avatar=cls.uploaded,
-        )
-        cls.DIR_UPLOAD_TO = cls.profile._meta.get_field('avatar').upload_to
-
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
-
-    def test_profile_name_is_username_field(self):
-        """В поле __str__  объекта profile записано значение
-        user.username profile.
-        """
-        expected_object_name = f'{self.profile.user.username} profile'
-        self.assertEqual(expected_object_name, str(self.profile))
-
-    def test_load_avatar_profile(self):
-        """В базе присутсвует объект profile с аватаркой"""
-        self.assertTrue(
-            Profile.objects.filter(
-                user=self.user,
-                avatar=f'{self.DIR_UPLOAD_TO}{self.uploaded}'
-            ).exists()
-        )

@@ -2,12 +2,13 @@
 <header>
   <nav class="navbar navbar-light" style="background-color: lightskyblue">
     <div class="container">
-      <a class="navbar-brand" href="{% url 'posts:index' %}">
+      <a class="navbar-brand" href="{% url 'posts:index' %}" title="Главная страница">
         <img src="{% static 'img/logo.png' %}"
              width="30"
              height="30"
              class="d-inline-block align-top"
-             alt="">
+             alt=""
+             title="Главная страница">
         <span style="color:red">Ya</span>tube
       </a>
       <ul class="nav nav-pills">
@@ -19,7 +20,7 @@
                    type="search"
                    placeholder="Поиск по постам"
                    {% if keyword %}value="{{ keyword }}"{% endif %}>
-            <button class="btn" type="submit">Найти</button>
+            <button class="btn" type="submit" title="Поиск по постам">Найти</button>
           </div>
         </form>
         <li>
@@ -55,16 +56,16 @@
               <a href="{% url 'posts:profile' user.username %}">
                 <div style="text-indent:10px;">
                   {% if user.profile.avatar %}
-                    <img src="{{ user.profile.avatar.url }}" height=45 width=45>
+                    <img src="{{ user.profile.avatar.url }}" height=45 width=45 title="Профайл {{ user.username }}">
                   {% else %}
-                    <img src="{% static 'img/avatar_3.png' %}" height=45 width=45>
+                    <img src="{% static 'img/avatar_3.png' %}" height=45 width=45 title="Профайл {{ user.username }}">
                   {% endif %}
                 </div>
               </a>  
             </li>
             <li class="nav-item">
               <a class="nav-link {% if view_name  == 'posts:avatar' %}active{% endif %}"
-                 href="{% url 'posts:avatar' user.username %}">Аватар
+                 href="{% url 'posts:avatar' user.username %}" title="Загрузить аватар">Аватар
               </a>
             </li>            
           {% else %}

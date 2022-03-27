@@ -2,8 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from http import HTTPStatus
-from posts.models import Comment, Group, Post
-from posts.forms import PostForm
+from posts.models import Comment, Group, Post, Profile
 import shutil
 import tempfile
 from django.conf import settings
@@ -24,6 +23,11 @@ class PostFormTests(TestCase):
             slug='test-slug',
             description='Тестовое описание',
         )
+        cls.post = Post.objects.create(
+            text='Тестовый пост',
+            author=cls.author,
+            group=cls.group,
+        )
         small_gif = (
             b'\x47\x49\x46\x38\x39\x61\x01\x00'
             b'\x01\x00\x00\x00\x00\x21\xf9\x04'
@@ -36,12 +40,6 @@ class PostFormTests(TestCase):
             content=small_gif,
             content_type='image/gif'
         )
-        cls.post = Post.objects.create(
-            text='Тестовый пост',
-            author=cls.author,
-            group=cls.group,
-        )
-        cls.form = PostForm()
         cls.DIR_UPLOAD_TO = cls.post._meta.get_field('image').upload_to
 
     @classmethod
@@ -151,5 +149,65 @@ class PostFormTests(TestCase):
                 text='Тестовый коммент',
                 author=self.not_author,
                 post=self.post.id,
+            ).exists()
+        )
+
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
+class ProfileFormTests(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x01\x00'
+            b'\x01\x00\x00\x00\x00\x21\xf9\x04'
+            b'\x01\x0a\x00\x01\x00\x2c\x00\x00'
+            b'\x00\x00\x01\x00\x01\x00\x00\x02'
+            b'\x02\x4c\x01\x00\x3b'
+        )
+        cls.uploaded = SimpleUploadedFile(
+            name='small.gif',
+            content=small_gif,
+            content_type='image/gif'
+        )
+        cls.DIR_UPLOAD_TO = Profile._meta.get_field('avatar').upload_to
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='TestName')
+        self.user_client = Client()
+        self.user_client.force_login(self.user)
+
+    def test_profile_with_avatar_create(self):
+        """Валидная форма создает запись в Profile."""
+        profile_count = Profile.objects.count()
+        self.assertFalse(
+            Profile.objects.filter(
+                user=self.user,
+                avatar=f'{self.DIR_UPLOAD_TO}{self.uploaded}',
+            ).exists()
+        )
+        form_data = {
+            'user': self.user,
+            'avatar': self.uploaded,
+        }
+        response = self.user_client.post(
+            reverse('posts:avatar', args=(self.user,)),
+            data=form_data,
+            follow=True
+        )
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        self.assertRedirects(
+            response, reverse('posts:profile', args=(self.user,))
+        )
+        self.assertEqual(Profile.objects.count(), profile_count + 1)
+        self.assertTrue(
+            Profile.objects.filter(
+                user=self.user,
+                avatar=f'{self.DIR_UPLOAD_TO}{self.uploaded}',
             ).exists()
         )
