@@ -268,14 +268,20 @@ class PagesViewsTests(TestCase):
             author=self.author,
             group=self.group,
         )
-        response = self.client.get(reverse(viewname))
+        response_after_add_post = self.client.get(reverse(viewname))
+        self.assertEqual(response.content, response_after_add_post.content)
         self.assertNotIn(
-            'Тестирование cache', response.content.decode('utf-8')
+            'Тестирование cache',
+            response_after_add_post.content.decode('utf-8')
         )
         cache.clear()  # time.sleep(20)
-        response = self.client.get(reverse(viewname))
+        response_after_clear_cache = self.client.get(reverse(viewname))
+        self.assertNotEqual(
+            response_after_add_post.content, response_after_clear_cache.content
+        )
         self.assertIn(
-            'Тестирование cache', response.content.decode('utf-8')
+            'Тестирование cache',
+            response_after_clear_cache.content.decode('utf-8')
         )
 
 
