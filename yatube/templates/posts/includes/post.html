@@ -1,11 +1,13 @@
 {% load thumbnail %}
 <article>
     <ul>
-      <li>
-        Автор: {{ post.author.get_full_name }}
-        <a href="{% url 'posts:profile' post.author %}">все посты пользователя</a>
-      </li>
-      {% if post.group %}
+      {% if show_autor %}
+        <li>
+          Автор: {{ post.author.get_full_name }}
+          <a href="{% url 'posts:profile' post.author %}">все посты пользователя</a>
+        </li>
+      {% endif %}
+      {% if post.group and show_group %}
         <li>
           Группа: {{ post.group }}
           <a href="{% url 'posts:group_list' post.group.slug %}">все записи группы</a>

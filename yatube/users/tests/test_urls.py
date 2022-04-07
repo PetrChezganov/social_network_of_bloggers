@@ -1,11 +1,12 @@
+from http import HTTPStatus
+
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
-from http import HTTPStatus
 
 User = get_user_model()
 
 
-class UsersURLTests(TestCase):
+class UsersURLsTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -39,6 +40,7 @@ class UsersURLTests(TestCase):
                 'users/password_reset_complete.html', HTTPStatus.OK
             ),
         }
+        cls.REDIRECT_AUTH_LOGIN = '/auth/login/?next='
 
     def setUp(self):
         # print(author)
@@ -66,18 +68,14 @@ class UsersURLTests(TestCase):
 
     # Проверяем редиректы для неавторизованного пользователя
     def test_password_change_url_redirect_anonymous_on_admin_login(self):
-        url_redirect = {
-            '/auth/password_change/': (
-                '/auth/login/?next=/auth/password_change/'
-            ),
-            '/auth/password_change/done/': (
-                '/auth/login/?next=/auth/password_change/done/'
-            ),
-        }
-        for url, redirect in url_redirect.items():
+        redirected_urls = (
+            '/auth/password_change/',
+            '/auth/password_change/done/',
+        )
+        for url in redirected_urls:
             with self.subTest(url=url):
                 response = self.client.get(url, follow=True)
-                self.assertRedirects(response, redirect)
+                self.assertRedirects(response, self.REDIRECT_AUTH_LOGIN + url)
 
     # Проверка вызываемых шаблонов для каждого адреса
     def test_urls_uses_correct_templates(self):

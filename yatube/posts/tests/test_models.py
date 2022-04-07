@@ -1,11 +1,12 @@
-from django.test import TestCase
 from django.contrib.auth import get_user_model
+from django.test import TestCase
+
 from posts.models import Comment, Follow, Group, Post, Profile
 
 User = get_user_model()
 
 
-class PostModelTest(TestCase):
+class PostModelTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -75,7 +76,7 @@ class PostModelTest(TestCase):
                     self.post._meta.get_field(field).help_text, expected_value)
 
 
-class GroupModelTest(TestCase):
+class GroupModelTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()

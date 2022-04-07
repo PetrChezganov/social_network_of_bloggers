@@ -3,26 +3,9 @@
 {% block title %}Записи сообщества {{ group }}{% endblock %}
 {% block header %}{{ group.title }}{% endblock %}
 {% block content %}
-  <p>
-    {{ group.description }}
-  </p>
+  <h5 align="center"> {{ group.description }} </h5>
   {% for post in page_obj %}
-    <article>
-      <ul>
-        <li>
-          Автор: {{ post.author.get_full_name }}
-          <a href="{% url 'posts:profile' post.author %}">все посты пользователя</a>
-        </li>
-        <li>Дата публикации: {{ post.pub_date|date:"d E Y" }}</li>
-      </ul>
-      {% thumbnail post.image "960x480" crop="center" upscale=True as im %}
-        <img class="card-img my-2" src="{{ im.url }}">
-      {% endthumbnail %}
-      <p>
-        {{ post.text }}
-      </p>
-      <a href="{% url 'posts:post_detail' post.id %}">подробная информация</a>
-    <article>
+    {% include 'posts/includes/post.html' with show_autor=True %}
     {% if not forloop.last %}<hr>{% endif %}
   {% endfor %}
   {% include 'posts/includes/paginator.html' %}

@@ -1,7 +1,9 @@
-from django.contrib.auth import get_user_model
-from django.test import TestCase, Client
 from http import HTTPStatus
-from posts.models import Post, Group
+
+from django.contrib.auth import get_user_model
+from django.test import Client, TestCase
+
+from posts.models import Group, Post
 
 User = get_user_model()
 
@@ -22,22 +24,25 @@ class PostsURLTests(TestCase):
             author=cls.author,
             group=cls.group,
         )
+        cls.URL_POST_ID = f'/posts/{cls.post.id}/'
+        cls.URL_PROFILE_AUTHOR = f'/profile/{cls.author}/'
+        cls.REDIRECT_AUTH_LOGIN = '/auth/login/?next='
         cls.url_template_status = {
             '/': ('posts/index.html', HTTPStatus.OK),
             f'/group/{cls.group.slug}/': (
                 'posts/group_list.html', HTTPStatus.OK
             ),
-            f'/profile/{cls.author}/': (
+            cls.URL_PROFILE_AUTHOR: (
                 'posts/profile.html', HTTPStatus.OK
             ),
-            f'/posts/{cls.post.id}/': (
+            cls.URL_POST_ID: (
                 'posts/post_detail.html', HTTPStatus.OK
             ),
-            f'/posts/{cls.post.id}/comment/': (
+            f'{cls.URL_POST_ID}comment/': (
                 None, HTTPStatus.FOUND
             ),
             '/create/': ('posts/create_post.html', HTTPStatus.FOUND),
-            f'/posts/{cls.post.id}/edit/': (
+            f'{cls.URL_POST_ID}edit/': (
                 'posts/create_post.html', HTTPStatus.FOUND
             ),
             '/follow/': ('posts/follow.html', HTTPStatus.FOUND),
@@ -47,20 +52,25 @@ class PostsURLTests(TestCase):
             f'/profile/{cls.not_author}/unfollow/': (
                 None, HTTPStatus.FOUND
             ),
-            f'/profile/{cls.author}/avatar/': (
+            f'{cls.URL_PROFILE_AUTHOR}avatar/': (
                 'posts/avatar.html', HTTPStatus.FOUND
             ),
             '/unexisting_page/': ('core/404.html', HTTPStatus.NOT_FOUND),
         }
         cls.url_status_for_author = {
-            f'/posts/{cls.post.id}/comment/': HTTPStatus.FOUND,
+            f'{cls.URL_POST_ID}comment/': HTTPStatus.FOUND,
             '/create/': HTTPStatus.OK,
-            f'/posts/{cls.post.id}/edit/': HTTPStatus.OK,
-            f'/posts/{cls.post.id}/delete/': HTTPStatus.FOUND,
+            f'{cls.URL_POST_ID}edit/': HTTPStatus.OK,
+            f'{cls.URL_POST_ID}delete/': HTTPStatus.FOUND,
             '/follow/': HTTPStatus.OK,
             f'/profile/{cls.not_author}/follow/': HTTPStatus.FOUND,
             f'/profile/{cls.not_author}/unfollow/': HTTPStatus.FOUND,
-            f'/profile/{cls.author}/avatar/': HTTPStatus.OK,
+            f'{cls.URL_PROFILE_AUTHOR}avatar/': HTTPStatus.OK,
+        }
+        cls.repeat_url_redirect = {
+            f'{cls.URL_POST_ID}comment/': cls.URL_POST_ID,
+            f'{cls.URL_PROFILE_AUTHOR}follow/': cls.URL_PROFILE_AUTHOR,
+            f'{cls.URL_PROFILE_AUTHOR}unfollow/': cls.URL_PROFILE_AUTHOR,
         }
 
     def setUp(self):
@@ -86,64 +96,51 @@ class PostsURLTests(TestCase):
 
     def test_post_url_redirect_anonymous_on_admin_login(self):
         """Проверяем редиректы для неавторизованного пользователя"""
-        url_redirect = {
-            f'/posts/{self.post.id}/comment/': (
-                f'/auth/login/?next=/posts/{self.post.id}/comment/'
-            ),
-            '/create/': '/auth/login/?next=/create/',
-            f'/posts/{self.post.id}/edit/': (
-                f'/auth/login/?next=/posts/{self.post.id}/edit/'
-            ),
-            f'/posts/{self.post.id}/delete/': (
-                f'/auth/login/?next=/posts/{self.post.id}/delete/'
-            ),
-            '/follow/': '/auth/login/?next=/follow/',
-        }
-        for url, redirect in url_redirect.items():
+        redirected_urls = (
+            f'{self.URL_POST_ID}comment/',
+            '/create/',
+            f'{self.URL_POST_ID}edit/',
+            f'{self.URL_POST_ID}delete/',
+            '/follow/',
+        )
+        for url in redirected_urls:
             with self.subTest(url=url):
                 response = self.client.get(url, follow=True)
-                self.assertRedirects(response, redirect)
+                self.assertRedirects(response, self.REDIRECT_AUTH_LOGIN + url)
 
     def test_post_url_redirect_not_author_on_post_detail(self):
         """Проверяем редиректы для авторизованного пользователя не автора
         поста"""
         url_redirect = {
-            f'/posts/{self.post.id}/comment/': f'/posts/{self.post.id}/',
-            f'/posts/{self.post.id}/edit/': f'/posts/{self.post.id}/',
-            f'/posts/{self.post.id}/delete/': f'/posts/{self.post.id}/',
-            f'/profile/{self.author}/follow/':
-                f'/profile/{self.author}/',
-            f'/profile/{self.author}/unfollow/':
-                f'/profile/{self.author}/',
-            f'/profile/{self.author}/avatar/':
-                f'/profile/{self.author}/',
+            f'{self.URL_POST_ID}edit/': self.URL_POST_ID,
+            f'{self.URL_POST_ID}delete/': self.URL_POST_ID,
+            f'{self.URL_PROFILE_AUTHOR}avatar/': self.URL_PROFILE_AUTHOR,
         }
         for url, redirect in url_redirect.items():
             with self.subTest(url=url):
                 response = self.not_author_client.get(url, follow=True)
                 self.assertRedirects(response, redirect)
-
-    def test_post_url_redirect_author(self):
-        """Проверяем редиректы для авторизованного автора поста"""
-        url_redirect = {
-            f'/posts/{self.post.id}/comment/': f'/posts/{self.post.id}/',
-            f'/posts/{self.post.id}/delete/': f'/profile/{self.author}/',
-            f'/profile/{self.author}/follow/':
-                f'/profile/{self.author}/',
-            f'/profile/{self.author}/unfollow/':
-                f'/profile/{self.author}/',
-        }
-        for url, redirect in url_redirect.items():
+        for url, redirect in self.repeat_url_redirect.items():
             with self.subTest(url=url):
                 response = self.author_client.get(url, follow=True)
                 self.assertRedirects(response, redirect)
+
+    def test_post_url_redirect_author(self):
+        """Проверяем редиректы для авторизованного автора поста"""
+        for url, redirect in self.repeat_url_redirect.items():
+            with self.subTest(url=url):
+                response = self.author_client.get(url, follow=True)
+                self.assertRedirects(response, redirect)
+        url = f'{self.URL_POST_ID}delete/'
+        response = self.author_client.get(url, follow=True)
+        self.assertRedirects(response, self.URL_PROFILE_AUTHOR)
 
     def test_urls_uses_correct_templates(self):
         """URL-адрес использует соответствующий шаблон."""
         for url in self.url_template_status:
             template, _ = self.url_template_status[url]
             with self.subTest(url=url):
-                if url not in (f'/posts/{self.post.id}/comment/',
+                if url not in (f'{self.URL_POST_ID}comment/',
                                f'/profile/{self.not_author}/follow/',
                                f'/profile/{self.not_author}/unfollow/'
                                ):

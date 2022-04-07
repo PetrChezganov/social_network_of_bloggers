@@ -1,10 +1,11 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from posts.models import Group, Follow, Post, Profile
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from .forms import CommentForm, PostForm, ProfileForm
-from .utils import page_obj_create
+from django.shortcuts import get_object_or_404, redirect, render
+
+from posts.forms import CommentForm, PostForm, ProfileForm
+from posts.models import Follow, Group, Post, Profile
+from posts.utils import page_obj_create
 
 User = get_user_model()
 
@@ -26,6 +27,7 @@ def index(request):
     context = {
         'page_obj': page_obj,
         'keyword': keyword,
+        'index': True,
     }
     template = 'posts/index.html'
     return render(request, template, context)
@@ -142,6 +144,7 @@ def follow_index(request):
     page_obj = page_obj_create(request, posts)
     context = {
         'page_obj': page_obj,
+        'follow': True,
     }
     return render(request, 'posts/follow.html', context)
 

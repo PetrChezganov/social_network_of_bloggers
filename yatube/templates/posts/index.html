@@ -1,14 +1,14 @@
 {% extends 'base.html' %}
+{% load cache %}
 {% block title %}Последние обновления на сайте{% endblock %}
 {% block header %}Последние обновления на сайте{% endblock %}
 {% block content %}
-  {% load cache %}
-  {% cache 20 index_page %}
+  {% cache 5 index_page %}
   {% include 'posts/includes/switcher.html' %}
-    {% for post in page_obj %}
-      {% include 'posts/includes/post.html' %}
-      {% if not forloop.last %}<hr>{% endif %}
-    {% endfor %}
-  {% endcache %}
-  {% include 'posts/includes/paginator.html' %}
+  {% for post in page_obj %}
+    {% include 'posts/includes/post.html' with show_autor=True show_group=True %}
+    {% if not forloop.last %}<hr>{% endif %}
+  {% endfor %}
+{% endcache %}
+{% include 'posts/includes/paginator.html' %}
 {% endblock %}

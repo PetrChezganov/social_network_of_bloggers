@@ -20,6 +20,7 @@
         <a href="{% url 'posts:profile' comment.author.username %}">
           {{ comment.author.username }}
         </a>
+        &emsp; <small> {{ comment.pub_date|date:"d.m.y" }} </small>
       </h5>
         <p>
          {{ comment.text }}

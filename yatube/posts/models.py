@@ -1,7 +1,8 @@
+from django.contrib.auth import get_user_model
 from django.db import models
 from django.db.models.constraints import UniqueConstraint
-from django.contrib.auth import get_user_model
 from pytils.translit import slugify
+
 from core.models import CreatedModel
 
 User = get_user_model()
@@ -96,7 +97,8 @@ class Follow(models.Model):
 
     class Meta:
         constraints = [
-            UniqueConstraint(fields=['user', 'author'], name='unique_follow')]
+            UniqueConstraint(fields=['user', 'author'], name='unique_follow'),
+        ]
 
     def __str__(self):
         return f'{self.user.username} follower of {self.author.username}'

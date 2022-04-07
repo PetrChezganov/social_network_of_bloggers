@@ -1,15 +1,17 @@
-from django.contrib.auth import get_user_model
-from django.test import Client, TestCase, override_settings
-from django.urls import reverse
-from http import HTTPStatus
-from django import forms
-from posts.models import Comment, Follow, Group, Post
-from posts.forms import CommentForm, PostForm, ProfileForm
 import shutil
 import tempfile
+from http import HTTPStatus
+
+from django import forms
 from django.conf import settings
-from django.core.files.uploadedfile import SimpleUploadedFile
+from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client, TestCase, override_settings
+from django.urls import reverse
+
+from posts.forms import CommentForm, PostForm, ProfileForm
+from posts.models import Comment, Follow, Group, Post
 
 User = get_user_model()
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
@@ -135,6 +137,8 @@ class PagesViewsTests(TestCase):
         PagesViewsTests.check_post_of_post_obj_is_correct(self, response)
         self.assertIn('keyword', response.context)
         self.assertIsNone(response.context['keyword'])
+        self.assertIn('index', response.context)
+        self.assertTrue(response.context['index'])
 
     def test_group_list_page_show_correct_context(self):
         """Шаблон group_list.html сформирован с правильным контекстом."""
@@ -158,7 +162,8 @@ class PagesViewsTests(TestCase):
             response.context['author'].username, self.post.author.username
         )
         self.assertIn('count', response.context)
-        self.assertEqual(response.context['count'], 1)
+        count = Post.objects.filter(author=self.author).count()
+        self.assertEqual(response.context['count'], count)
         self.assertIn('following', response.context)
         self.assertFalse(response.context['following'])
 
@@ -186,7 +191,8 @@ class PagesViewsTests(TestCase):
             self.post.author.username
         )
         self.assertIn('count', response.context)
-        self.assertEqual(response.context['count'], 1)
+        count = Post.objects.filter(author=self.author).count()
+        self.assertEqual(response.context['count'], count)
         self.assertIn('comments', response.context)
         self.assertEqual(response.context['comments'][0], self.comment)
         self.assertIn('form', response.context)
@@ -237,6 +243,8 @@ class PagesViewsTests(TestCase):
         self.assertEqual(
             first_object.author.username, self.not_author.username
         )
+        self.assertIn('follow', response.context)
+        self.assertTrue(response.context['follow'])
 
     def test_avatar_page_show_correct_context(self):
         """Шаблон avatar.html сформирован с правильным контекстом."""
@@ -254,24 +262,26 @@ class PagesViewsTests(TestCase):
         self.assertIn('author', response.context)
         self.assertEqual(response.context['author'], self.post.author)
         self.assertIn('count', response.context)
-        self.assertEqual(response.context['count'], 1)
+        count = Post.objects.filter(author=self.author).count()
+        self.assertEqual(response.context['count'], count)
 
     def test_cache(self):
         """Главная страница сайта кеширует содержимое на 20 секунд"""
         viewname, _, _, = self.name_kwargs_template['index']
         response = self.client.get(reverse(viewname))
+        text_for_post = 'Тестирование cache'
         self.assertNotIn(
-            'Тестирование cache', response.content.decode('utf-8')
+            text_for_post, response.content.decode('utf-8')
         )
         Post.objects.create(
-            text='Тестирование cache',
+            text=text_for_post,
             author=self.author,
             group=self.group,
         )
         response_after_add_post = self.client.get(reverse(viewname))
         self.assertEqual(response.content, response_after_add_post.content)
         self.assertNotIn(
-            'Тестирование cache',
+            text_for_post,
             response_after_add_post.content.decode('utf-8')
         )
         cache.clear()  # time.sleep(20)
@@ -280,12 +290,12 @@ class PagesViewsTests(TestCase):
             response_after_add_post.content, response_after_clear_cache.content
         )
         self.assertIn(
-            'Тестирование cache',
+            text_for_post,
             response_after_clear_cache.content.decode('utf-8')
         )
 
 
-class PaginatorViewsTest(TestCase):
+class PaginatorViewsTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -302,8 +312,7 @@ class PaginatorViewsTest(TestCase):
         )
         post_list = list()
         POSTS_TWO_PAGES = 13
-        POSTS_FIRST_PAGE = 10
-        POSTS_SECOND_PAGE = 3
+        POSTS_SECOND_PAGE = POSTS_TWO_PAGES - settings.POSTS_ON_PAGE
         for i in range(POSTS_TWO_PAGES):
             post_list.append(
                 Post(
@@ -314,23 +323,23 @@ class PaginatorViewsTest(TestCase):
             )
         Post.objects.bulk_create(post_list)
         cls.posts_on_pages = {
-            reverse('posts:index'): POSTS_FIRST_PAGE,
+            reverse('posts:index'): settings.POSTS_ON_PAGE,
             reverse('posts:index') + '?page=2': POSTS_SECOND_PAGE,
             reverse(
                 'posts:group_list', kwargs={'url': cls.group.slug}
-            ): POSTS_FIRST_PAGE,
+            ): settings.POSTS_ON_PAGE,
             reverse(
                 'posts:group_list', kwargs={'url': cls.group.slug}
             ) + '?page=2': POSTS_SECOND_PAGE,
             reverse(
                 'posts:profile', kwargs={'username': cls.author}
-            ): POSTS_FIRST_PAGE,
+            ): settings.POSTS_ON_PAGE,
             reverse(
                 'posts:profile', kwargs={'username': cls.author}
             ) + '?page=2': POSTS_SECOND_PAGE,
         }
         cls.posts_on_follow = {
-            reverse('posts:follow_index'): POSTS_FIRST_PAGE,
+            reverse('posts:follow_index'): settings.POSTS_ON_PAGE,
             reverse('posts:follow_index') + '?page=2': POSTS_SECOND_PAGE,
         }
 
@@ -352,7 +361,7 @@ class PaginatorViewsTest(TestCase):
                 response = self.not_author_client.get(reverse_name)
 
 
-class PostViewsTest(TestCase):
+class PostViewsTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -401,7 +410,7 @@ class PostViewsTest(TestCase):
         self.assertNotIn(self.post, response.context['page_obj'])
 
 
-class FollowViewsTest(TestCase):
+class FollowViewsTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -479,15 +488,16 @@ class FollowViewsTest(TestCase):
             reverse('posts:profile_follow', args=(self.author.username,)),
             follow=True
         )
+        text_for_post = 'Новый пост автора'
         new_post = Post.objects.create(
-            text='Новый пост автора',
+            text=text_for_post,
             author=self.author,
         )
         response = self.subscriber_client.get(reverse('posts:follow_index'))
-        PagesViewsTests.check_post_obj_in_context(self, response)
+        self.assertIn('page_obj', response.context)
         self.assertIn(new_post, response.context['page_obj'])
         first_object = response.context['page_obj'][0]
-        self.assertEqual(first_object.text, 'Новый пост автора')
+        self.assertEqual(first_object.text, text_for_post)
         self.assertEqual(
             first_object.author.username, self.post.author.username
         )
@@ -498,8 +508,9 @@ class FollowViewsTest(TestCase):
             reverse('posts:profile_unfollow', args=(self.author.username,)),
             follow=True
         )
+        text_for_post = 'Новый пост автора'
         new_post = Post.objects.create(
-            text='Новый пост автора',
+            text=text_for_post,
             author=self.author,
         )
         response = self.unsubscriber_client.get(
@@ -508,9 +519,5 @@ class FollowViewsTest(TestCase):
         self.assertIn('page_obj', response.context)
         self.assertNotIn(new_post, response.context['page_obj'])
         self.assertNotIn(
-            self.post.text, response.content.decode('utf-8')
-        )
-
-        self.assertNotIn(
-            'Новый пост автора', response.content.decode('utf-8')
+            text_for_post, response.content.decode('utf-8')
         )

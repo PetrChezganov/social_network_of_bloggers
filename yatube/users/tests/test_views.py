@@ -1,7 +1,8 @@
+from django import forms
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
-from django import forms
+
 from users.forms import CreationForm
 
 User = get_user_model()
@@ -51,8 +52,7 @@ class UsersViewsTests(TestCase):
     # Проверяем используемый шаблон и корректность namespace:name
     # для password_reset_confirm
     def test_password_reset_confirm_uses_correct_templates(self):
-        """URL-адрес /auth/reset/<uidb64>/<token>/
-        использует соответствующий шаблон.
+        """URL-адрес /auth/reset/<uidb64>/<token>/ использует соответствующий шаблон.
         """
         name = 'users:password_reset_confirm'
         kwargs_name = {'uidb64': 'uidb64', 'token': 'token'}

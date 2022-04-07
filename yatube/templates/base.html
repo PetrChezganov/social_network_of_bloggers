@@ -1,11 +1,8 @@
-<!-- templates/base.html -->
 {% load static %}
 <!DOCTYPE html> <!-- Используется html 5 версии -->
-<html lang="ru">
-  <!-- Язык сайта - русский -->
+<html lang="ru">  <!-- Язык сайта - русский -->
   <head>
-    <meta charset="utf-8">
-    <!-- Кодировка сайта -->
+    <meta charset="utf-8">  <!-- Кодировка сайта -->
     <!-- Сайт готов работать с мобильными устройствами -->
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- Загружаем фав-иконки -->
@@ -34,7 +31,7 @@
     <main>
       <!-- класс py-5 создает отступы справа и слева блока -->
       <div class="container py-5">
-        <h1>
+        <h1 align="center">
           {% block header %}{% endblock %}
         </h1>
         {% block content %}Контент не подвезли :({% endblock %}

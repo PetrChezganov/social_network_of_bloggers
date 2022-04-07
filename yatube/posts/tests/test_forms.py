@@ -1,12 +1,14 @@
-from django.contrib.auth import get_user_model
-from django.test import Client, TestCase, override_settings
-from django.urls import reverse
-from http import HTTPStatus
-from posts.models import Comment, Group, Post, Profile
 import shutil
 import tempfile
+from http import HTTPStatus
+
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client, TestCase, override_settings
+from django.urls import reverse
+
+from posts.models import Comment, Group, Post, Profile
 
 User = get_user_model()
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
@@ -57,16 +59,17 @@ class PostFormTests(TestCase):
     def test_post_create(self):
         """Валидная форма создает запись в Post."""
         posts_count = Post.objects.count()
+        text_for_post = 'Тестовый пост 2'
         self.assertFalse(
             Post.objects.filter(
-                text='Тестовый пост 2',
+                text=text_for_post,
                 author=self.author,
                 group=self.group.id,
                 image=f'{self.DIR_UPLOAD_TO}{self.uploaded}',
             ).exists()
         )
         form_data = {
-            'text': 'Тестовый пост 2',
+            'text': text_for_post,
             'group': self.group.id,
             'image': self.uploaded,
         }
@@ -82,7 +85,7 @@ class PostFormTests(TestCase):
         self.assertEqual(Post.objects.count(), posts_count + 1)
         self.assertTrue(
             Post.objects.filter(
-                text='Тестовый пост 2',
+                text=text_for_post,
                 author=self.author,
                 group=self.group.id,
                 image=f'{self.DIR_UPLOAD_TO}{self.uploaded}',
@@ -92,15 +95,16 @@ class PostFormTests(TestCase):
     def test_post_edit(self):
         """Валидная форма редактирует запись в Post."""
         posts_count = Post.objects.count()
+        text_for_post_edit = 'Тестовый пост с изменениями'
         self.assertFalse(
             Post.objects.filter(
-                text='Тестовый пост с изменениями',
+                text=text_for_post_edit,
                 author=self.author,
                 group=self.group.id,
             ).exists()
         )
         form_data = {
-            'text': 'Тестовый пост с изменениями',
+            'text': text_for_post_edit,
             'group': self.group.id,
         }
         response = self.author_client.post(
@@ -115,7 +119,8 @@ class PostFormTests(TestCase):
         self.assertEqual(Post.objects.count(), posts_count)
         self.assertTrue(
             Post.objects.filter(
-                text='Тестовый пост с изменениями',
+                id=self.post.id,
+                text=text_for_post_edit,
                 author=self.author,
                 group=self.group.id,
             ).exists()
@@ -124,15 +129,16 @@ class PostFormTests(TestCase):
     def test_comment_create(self):
         """Валидная форма создает запись в Comment."""
         comments_count = Comment.objects.count()
+        text_for_comment = 'Тестовый коммент'
         self.assertFalse(
             Comment.objects.filter(
-                text='Тестовый коммент',
+                text=text_for_comment,
                 author=self.not_author,
                 post=self.post.id,
             ).exists()
         )
         form_data = {
-            'text': 'Тестовый коммент',
+            'text': text_for_comment,
         }
         response = self.not_author_client.post(
             reverse('posts:add_comment', args=(self.post.id,)),
@@ -146,11 +152,13 @@ class PostFormTests(TestCase):
         self.assertEqual(Comment.objects.count(), comments_count + 1)
         self.assertTrue(
             Comment.objects.filter(
-                text='Тестовый коммент',
+                text=text_for_comment,
                 author=self.not_author,
                 post=self.post.id,
             ).exists()
         )
+        last_comment = Comment.objects.latest('id')
+        self.assertEqual(last_comment.post.id, self.post.id)
 
 
 @override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
