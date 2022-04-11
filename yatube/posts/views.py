@@ -27,7 +27,6 @@ def index(request):
     context = {
         'page_obj': page_obj,
         'keyword': keyword,
-        'index': True,
     }
     template = 'posts/index.html'
     return render(request, template, context)
@@ -144,7 +143,6 @@ def follow_index(request):
     page_obj = page_obj_create(request, posts)
     context = {
         'page_obj': page_obj,
-        'follow': True,
     }
     return render(request, 'posts/follow.html', context)
 

@@ -4,7 +4,7 @@
 {% block header %}Последние обновления на сайте{% endblock %}
 {% block content %}
   {% cache 5 index_page %}
-  {% include 'posts/includes/switcher.html' %}
+  {% include 'posts/includes/switcher.html' with index=True %}
   {% for post in page_obj %}
     {% include 'posts/includes/post.html' with show_autor=True show_group=True %}
     {% if not forloop.last %}<hr>{% endif %}

@@ -18,14 +18,14 @@ class PostModelTests(TestCase):
             description='Тестовое описание',
         )
         cls.post = Post.objects.create(
-            text='Тестовый пост',
+            text='Тестовый тестовый тестовый пост',
             author=cls.author,
             group=cls.group,
         )
         cls.comment = Comment.objects.create(
             author=cls.author,
             post=cls.post,
-            text='Тестовый коммент',
+            text='Тестовый тестовый тестовый коммент',
         )
         cls.follow = Follow.objects.create(
             user=cls.author,
