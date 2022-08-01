@@ -137,8 +137,6 @@ class PagesViewsTests(TestCase):
         PagesViewsTests.check_post_of_post_obj_is_correct(self, response)
         self.assertIn('keyword', response.context)
         self.assertIsNone(response.context['keyword'])
-        self.assertIn('index', response.context)
-        self.assertTrue(response.context['index'])
 
     def test_group_list_page_show_correct_context(self):
         """Шаблон group_list.html сформирован с правильным контекстом."""
@@ -243,8 +241,6 @@ class PagesViewsTests(TestCase):
         self.assertEqual(
             first_object.author.username, self.not_author.username
         )
-        self.assertIn('follow', response.context)
-        self.assertTrue(response.context['follow'])
 
     def test_avatar_page_show_correct_context(self):
         """Шаблон avatar.html сформирован с правильным контекстом."""
